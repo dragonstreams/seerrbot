@@ -57,6 +57,24 @@ export async function registerCommands(config: ReelRelayConfig) {
   });
 }
 
+export async function editInteractionResponse(
+  applicationId: string,
+  interactionToken: string,
+  content: string,
+) {
+  const response = await fetch(
+    `https://discord.com/api/v10/webhooks/${applicationId}/${interactionToken}/messages/@original`,
+    {
+      method: "PATCH",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ content, allowed_mentions: { parse: [] } }),
+    },
+  );
+  if (!response.ok) {
+    throw new Error(`Discord could not update the command response (${response.status}).`);
+  }
+}
+
 export async function notifyAvailable(config: ReelRelayConfig, channelId: string, userId: string, title: string) {
   return discordFetch(config, `/channels/${channelId}/messages`, {
     method: "POST",

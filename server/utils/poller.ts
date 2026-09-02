@@ -41,12 +41,13 @@ async function importRequest(
 
 export async function pollFulfilledRequests() {
   const store = await readStore();
-  if (!store.config) return { checked: 0, synced: 0, notified: 0 };
+  if (!store.config) return { checked: 0, synced: 0, notified: 0, notificationFailed: 0 };
 
   const remote = await getSeerrRequests(store.config);
   const remoteRequests = remote.results ?? [];
   let synced = 0;
   let notified = 0;
+  let notificationFailed = 0;
   let changed = false;
 
   const knownIds = new Set(store.requests.map((request) => request.seerrRequestId));
@@ -65,13 +66,18 @@ export async function pollFulfilledRequests() {
     const match = remoteRequests.find((request) => Number(request.id) === item.seerrRequestId);
     if (!match || !isAvailable(match)) continue;
     if (item.channelId && item.userId) {
-      await notifyAvailable(store.config, item.channelId, item.userId, item.title);
-      notified += 1;
+      try {
+        await notifyAvailable(store.config, item.channelId, item.userId, item.title);
+        notified += 1;
+      } catch (error) {
+        notificationFailed += 1;
+        console.error(`ReelRelay could not notify Discord for request ${item.seerrRequestId}`, error);
+      }
     }
     item.status = "available";
     changed = true;
   }
 
   if (changed) await writeStore(store);
-  return { checked: remoteRequests.length, synced, notified };
+  return { checked: remoteRequests.length, synced, notified, notificationFailed };
 }

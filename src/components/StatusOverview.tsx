@@ -26,7 +26,9 @@ export function StatusOverview({ config, requests, counts, onRefresh }: Props) {
     try {
       const response = await fetch("/api/poll", { method: "POST", headers: { "x-admin-secret": secret } });
       const data = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(data.statusMessage ?? "Status check failed");
+      if (!response.ok) {
+        throw new Error(data.statusMessage ?? data.message ?? data.error?.message ?? `Status check failed (${response.status})`);
+      }
       await onRefresh();
       toast.success(data.message);
     } catch (error) {

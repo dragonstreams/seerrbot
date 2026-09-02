@@ -12,16 +12,25 @@ export default defineHandler(async (event) => {
     throw createError({ statusCode: 401, statusMessage: "Dashboard secret is incorrect." });
   }
 
-  const result = await pollFulfilledRequests();
-  const updates = [
-    result.synced ? `synced ${result.synced} request${result.synced === 1 ? "" : "s"}` : "",
-    result.notified ? `sent ${result.notified} notification${result.notified === 1 ? "" : "s"}` : "",
-  ].filter(Boolean);
-  return {
-    ok: true,
-    ...result,
-    message: updates.length
-      ? `${updates.join(" and ")}.`
-      : `Checked ${result.checked} Seerr request${result.checked === 1 ? "" : "s"}; everything is up to date.`,
-  };
+  try {
+    const result = await pollFulfilledRequests();
+    const updates = [
+      result.synced ? `synced ${result.synced} request${result.synced === 1 ? "" : "s"}` : "",
+      result.notified ? `sent ${result.notified} notification${result.notified === 1 ? "" : "s"}` : "",
+      result.notificationFailed ? `${result.notificationFailed} Discord notification${result.notificationFailed === 1 ? "" : "s"} failed` : "",
+    ].filter(Boolean);
+    return {
+      ok: true,
+      ...result,
+      message: updates.length
+        ? `${updates.join("; ")}.`
+        : `Checked ${result.checked} Seerr request${result.checked === 1 ? "" : "s"}; everything is up to date.`,
+    };
+  } catch (error) {
+    console.error("ReelRelay status check failed", error);
+    throw createError({
+      statusCode: 502,
+      statusMessage: error instanceof Error ? error.message : "Could not synchronize with Seerr.",
+    });
+  }
 });

@@ -1,10 +1,67 @@
 import { defineHandler } from "nitro";
 import { createError, getRequestHeaders, readRawBody } from "nitro/h3";
-import { verifyDiscordRequest } from "../../../utils/discord";
+import { editInteractionResponse, verifyDiscordRequest } from "../../../utils/discord";
 import { createSeerrRequest, searchSeerr } from "../../../utils/seerr";
-import { readStore, writeStore } from "../../../utils/store";
+import { readStore, writeStore, type ReelRelayConfig } from "../../../utils/store";
 
 const response = (data: Record<string, unknown>, type = 4) => ({ type, data });
+
+async function completeRequest(
+  config: ReelRelayConfig,
+  interaction: any,
+  rawValue: string,
+  mediaType?: "movie" | "tv",
+) {
+  try {
+    const encoded = rawValue.match(/^(movie|tv):(\d+):(.+)$/);
+    let picked: { id: number; mediaType: "movie" | "tv"; title: string } | undefined;
+    if (encoded) {
+      picked = { mediaType: encoded[1] as "movie" | "tv", id: Number(encoded[2]), title: encoded[3] };
+    } else {
+      picked = (await searchSeerr(config, rawValue, mediaType))[0];
+    }
+
+    if (!picked) {
+      await editInteractionResponse(
+        config.discordApplicationId,
+        interaction.token,
+        `I couldn't find **${rawValue}**. Try a more specific title.`,
+      );
+      return;
+    }
+
+    const created = await createSeerrRequest(config, picked.id, picked.mediaType);
+    const store = await readStore();
+    store.requests.push({
+      id: crypto.randomUUID(),
+      seerrRequestId: created.id,
+      mediaId: picked.id,
+      mediaType: picked.mediaType,
+      title: picked.title,
+      userId: interaction.member?.user?.id ?? interaction.user?.id,
+      channelId: interaction.channel_id,
+      createdAt: new Date().toISOString(),
+      status: "pending",
+    });
+    await writeStore(store);
+    await editInteractionResponse(
+      config.discordApplicationId,
+      interaction.token,
+      `🍿 **${picked.title}** has been requested! I'll ping you here when it's ready.`,
+    );
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Unknown error";
+    try {
+      await editInteractionResponse(
+        config.discordApplicationId,
+        interaction.token,
+        `I couldn't place that request: ${message}`,
+      );
+    } catch (replyError) {
+      console.error("ReelRelay could not complete the Discord interaction", replyError);
+    }
+  }
+}
 
 export default defineHandler(async (event) => {
   const store = await readStore();
@@ -45,35 +102,8 @@ export default defineHandler(async (event) => {
     return response({ content: "That command is not supported.", flags: 64 });
   }
 
-  try {
-    const rawValue = String(titleOption?.value ?? "");
-    const encoded = rawValue.match(/^(movie|tv):(\d+):(.+)$/);
-    let picked: { id: number; mediaType: "movie" | "tv"; title: string } | undefined;
-    if (encoded) {
-      picked = { mediaType: encoded[1] as "movie" | "tv", id: Number(encoded[2]), title: encoded[3] };
-    } else {
-      picked = (await searchSeerr(store.config, rawValue, mediaType))[0];
-    }
-    if (!picked) return response({ content: `I couldn't find **${rawValue}**. Try a more specific title.`, flags: 64 });
+  const rawValue = String(titleOption?.value ?? "");
+  void completeRequest(store.config, interaction, rawValue, mediaType);
 
-    const created = await createSeerrRequest(store.config, picked.id, picked.mediaType);
-    store.requests.push({
-      id: crypto.randomUUID(),
-      seerrRequestId: created.id,
-      mediaId: picked.id,
-      mediaType: picked.mediaType,
-      title: picked.title,
-      userId: interaction.member?.user?.id ?? interaction.user?.id,
-      channelId: interaction.channel_id,
-      createdAt: new Date().toISOString(),
-      status: "pending",
-    });
-    await writeStore(store);
-    return response({
-      content: `🍿 **${picked.title}** has been requested! I'll ping you here when it's ready.`,
-      allowed_mentions: { parse: [] },
-    });
-  } catch (error) {
-    return response({ content: `I couldn't place that request: ${error instanceof Error ? error.message : "Unknown error"}`, flags: 64 });
-  }
+  return response({ flags: 64 }, 5);
 });
