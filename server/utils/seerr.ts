@@ -90,14 +90,22 @@ export async function getSeerrRequests(config: ReelRelayConfig) {
   return seerrFetch<{ results?: Array<Record<string, any>> }>(config, "/api/v1/request?take=100&skip=0&sort=added");
 }
 
+export async function getSeerrMediaDetails(
+  config: ReelRelayConfig,
+  mediaType: "movie" | "tv",
+  mediaId: number,
+) {
+  return seerrFetch<{ title?: string; name?: string; posterPath?: string }>(
+    config,
+    `/api/v1/${mediaType}/${mediaId}`,
+  );
+}
+
 export async function getSeerrMediaTitle(
   config: ReelRelayConfig,
   mediaType: "movie" | "tv",
   mediaId: number,
 ) {
-  const media = await seerrFetch<{ title?: string; name?: string }>(
-    config,
-    `/api/v1/${mediaType}/${mediaId}`,
-  );
+  const media = await getSeerrMediaDetails(config, mediaType, mediaId);
   return media.title ?? media.name;
 }

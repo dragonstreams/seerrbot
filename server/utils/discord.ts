@@ -61,13 +61,18 @@ export async function editInteractionResponse(
   applicationId: string,
   interactionToken: string,
   content: string,
+  posterUrl?: string,
 ) {
   const response = await fetch(
     `https://discord.com/api/v10/webhooks/${applicationId}/${interactionToken}/messages/@original`,
     {
       method: "PATCH",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ content, allowed_mentions: { parse: [] } }),
+      body: JSON.stringify({
+        content,
+        allowed_mentions: { parse: [] },
+        embeds: posterUrl ? [{ image: { url: posterUrl } }] : [],
+      }),
     },
   );
   if (!response.ok) {

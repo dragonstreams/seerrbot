@@ -1,7 +1,7 @@
 import { defineHandler } from "nitro";
 import { createError, getRequestHeaders, readRawBody } from "nitro/h3";
 import { editInteractionResponse, verifyDiscordRequest } from "../../../utils/discord";
-import { createSeerrRequest, searchSeerr } from "../../../utils/seerr";
+import { createSeerrRequest, getSeerrMediaDetails, searchSeerr } from "../../../utils/seerr";
 import { readStore, writeStore, type ReelRelayConfig } from "../../../utils/store";
 
 const response = (data: Record<string, unknown>, type = 4) => ({ type, data });
@@ -30,7 +30,13 @@ async function completeRequest(
       return;
     }
 
-    const created = await createSeerrRequest(config, picked.id, picked.mediaType);
+    const [created, mediaDetails] = await Promise.all([
+      createSeerrRequest(config, picked.id, picked.mediaType),
+      getSeerrMediaDetails(config, picked.mediaType, picked.id).catch(() => null),
+    ]);
+    const posterUrl = mediaDetails?.posterPath
+      ? `https://image.tmdb.org/t/p/w500${mediaDetails.posterPath}`
+      : undefined;
     const store = await readStore();
     store.requests.push({
       id: crypto.randomUUID(),
@@ -50,6 +56,7 @@ async function completeRequest(
       config.discordApplicationId,
       interaction.token,
       `🍿 **${picked.title}** has been requested! I'll ping you here when it's ready.`,
+      posterUrl,
     );
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown error";
