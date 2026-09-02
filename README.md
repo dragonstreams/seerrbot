@@ -29,18 +29,25 @@ Use these values when creating the Magic Container application:
 
 Keep the application at one instance because the encrypted local store is mounted as a single persistent volume. Without the `/data` persistent volume, setup and request history will be lost when Bunny replaces or restarts the container.
 
-### Deploy
+### Build and deploy
 
-1. Publish the repository to GitHub or publish its Docker image to a registry supported by Bunny.
-2. In **Magic Containers**, create an application from the repository or image.
-3. Set the container port, persistent volume, health checks, and instance limits using the table above.
-4. Deploy and open the public hostname assigned to the application.
-5. Complete ReelRelay's **Setup** page with the Seerr and Discord credentials.
-6. In the Discord Developer Portal, set the Interactions Endpoint URL to:
+The included GitHub Actions workflow builds the image on every push to `main` or `master`, and can also be started manually from GitHub's **Actions** tab. It publishes these GHCR tags:
+
+- `ghcr.io/OWNER/REPOSITORY:latest` for the default branch;
+- `ghcr.io/OWNER/REPOSITORY:sha-COMMIT` for immutable deployments;
+- `ghcr.io/OWNER/REPOSITORY:vX.Y.Z` for Git tags.
+
+1. Open the completed **Build ReelRelay container** workflow in GitHub Actions.
+2. Open the published package and make it public, or add GHCR as a private image registry in Bunny using a GitHub token with `read:packages` access.
+3. In **Magic Containers**, create an application using `ghcr.io/OWNER/REPOSITORY:latest`.
+4. Set the container port, persistent volume, health checks, and instance limits using the table above.
+5. Deploy and open the public hostname assigned to the application.
+6. Complete ReelRelay's **Setup** page with the Seerr and Discord credentials.
+7. In the Discord Developer Portal, set the Interactions Endpoint URL to:
 
    `https://YOUR-BUNNY-HOST/api/bot/interactions`
 
-7. Return to ReelRelay and choose **Publish /request**.
+8. Return to ReelRelay and choose **Publish /request**.
 
 The public hostname must use HTTPS because Discord requires a publicly reachable HTTPS interactions endpoint.
 
