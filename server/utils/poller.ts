@@ -41,13 +41,14 @@ async function importRequest(
 
 export async function pollFulfilledRequests() {
   const store = await readStore();
-  if (!store.config) return { checked: 0, synced: 0, notified: 0, notificationFailed: 0 };
+  if (!store.config) return { checked: 0, synced: 0, notified: 0, notificationFailed: 0, notificationErrors: [] as string[] };
 
   const remote = await getSeerrRequests(store.config);
   const remoteRequests = remote.results ?? [];
   let synced = 0;
   let notified = 0;
   let notificationFailed = 0;
+  const notificationErrors: string[] = [];
   let changed = false;
 
   const knownIds = new Set(store.requests.map((request) => request.seerrRequestId));
@@ -62,22 +63,38 @@ export async function pollFulfilledRequests() {
     changed = true;
   }
 
-  for (const item of store.requests.filter((request) => request.status === "pending")) {
+  for (const item of store.requests) {
     const match = remoteRequests.find((request) => Number(request.id) === item.seerrRequestId);
     if (!match || !isAvailable(match)) continue;
-    if (item.channelId && item.userId) {
+
+    const canNotify = item.channelId && item.userId;
+    const shouldNotify = canNotify
+      && item.notificationStatus !== "sent"
+      && (item.notificationAttempts ?? 0) < 3;
+    if (shouldNotify) {
+      item.notificationAttempts = (item.notificationAttempts ?? 0) + 1;
       try {
         await notifyAvailable(store.config, item.channelId, item.userId, item.title);
+        item.notificationStatus = "sent";
+        item.notificationError = undefined;
         notified += 1;
       } catch (error) {
+        const message = error instanceof Error ? error.message : "Discord rejected the notification.";
+        item.notificationStatus = "failed";
+        item.notificationError = message.slice(0, 240);
+        notificationErrors.push(item.notificationError);
         notificationFailed += 1;
         console.error(`ReelRelay could not notify Discord for request ${item.seerrRequestId}`, error);
       }
+      changed = true;
     }
-    item.status = "available";
-    changed = true;
+
+    if (item.status !== "available") {
+      item.status = "available";
+      changed = true;
+    }
   }
 
   if (changed) await writeStore(store);
-  return { checked: remoteRequests.length, synced, notified, notificationFailed };
+  return { checked: remoteRequests.length, synced, notified, notificationFailed, notificationErrors };
 }

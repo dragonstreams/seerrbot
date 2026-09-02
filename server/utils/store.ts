@@ -23,6 +23,9 @@ export type TrackedRequest = {
   channelId: string;
   createdAt: string;
   status: "pending" | "available";
+  notificationStatus?: "pending" | "sent" | "failed";
+  notificationAttempts?: number;
+  notificationError?: string;
 };
 
 type StoreData = { config?: ReelRelayConfig; requests: TrackedRequest[] };

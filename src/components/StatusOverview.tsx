@@ -4,7 +4,15 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import type { SafeConfig } from "./SetupForm";
 
-export type TrackedRequest = { id: string; title: string; mediaType: "movie" | "tv"; status: "pending" | "available"; createdAt: string };
+export type TrackedRequest = {
+  id: string;
+  title: string;
+  mediaType: "movie" | "tv";
+  status: "pending" | "available";
+  createdAt: string;
+  notificationStatus?: "pending" | "sent" | "failed";
+  notificationError?: string;
+};
 
 type Props = {
   config: SafeConfig | null;
@@ -30,7 +38,8 @@ export function StatusOverview({ config, requests, counts, onRefresh }: Props) {
         throw new Error(data.statusMessage ?? data.message ?? data.error?.message ?? `Status check failed (${response.status})`);
       }
       await onRefresh();
-      toast.success(data.message);
+      if (data.notificationFailed) toast.error(data.message, { duration: 9000 });
+      else toast.success(data.message);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Status check failed");
     } finally {
@@ -67,7 +76,7 @@ export function StatusOverview({ config, requests, counts, onRefresh }: Props) {
       {requests.length ? <div className="mt-5 space-y-2">{requests.map((item) => <div key={item.id} className="request-row">
         <span className="request-icon">{item.mediaType === "movie" ? <Film size={17} /> : <Tv2 size={17} />}</span>
         <div className="min-w-0 flex-1"><p className="truncate font-semibold text-slate-100">{item.title}</p><p className="text-xs text-slate-500">{new Date(item.createdAt).toLocaleDateString(undefined, { month: "short", day: "numeric" })} · {item.mediaType === "movie" ? "Movie" : "TV series"}</p></div>
-        <span className={`request-state ${item.status}`}>{item.status === "available" ? "Ready" : "Requested"}</span>
+        <span className={`request-state ${item.notificationStatus === "failed" ? "failed" : item.status}`} title={item.notificationError}>{item.notificationStatus === "failed" ? "Notify failed" : item.status === "available" ? "Ready" : "Requested"}</span>
       </div>)}</div> : <div className="empty-state">
         <img src="/assets/request-journey.png" alt="Bot carrying a request to a home cinema" />
         <div><p>No requests yet</p><span>Request a title in Discord or Seerr, then select <strong>Check now</strong>.</span></div>

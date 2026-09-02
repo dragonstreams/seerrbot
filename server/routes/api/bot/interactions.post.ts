@@ -42,6 +42,8 @@ async function completeRequest(
       channelId: interaction.channel_id,
       createdAt: new Date().toISOString(),
       status: "pending",
+      notificationStatus: "pending",
+      notificationAttempts: 0,
     });
     await writeStore(store);
     await editInteractionResponse(

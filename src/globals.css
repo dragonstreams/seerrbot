@@ -81,6 +81,7 @@
   .request-state { @apply rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider; }
   .request-state.pending { @apply bg-amber-400/10 text-amber-300; }
   .request-state.available { @apply bg-emerald-400/10 text-emerald-300; }
+  .request-state.failed { @apply bg-red-400/10 text-red-300; }
   .empty-state { @apply mt-5 flex flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-white/10 bg-[#14151b] p-6 text-center sm:flex-row sm:text-left; }
   .empty-state img { @apply h-28 w-40 rounded-xl object-cover; }
   .empty-state p { @apply font-bold text-slate-200; }

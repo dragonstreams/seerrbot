@@ -76,11 +76,33 @@ export async function editInteractionResponse(
 }
 
 export async function notifyAvailable(config: ReelRelayConfig, channelId: string, userId: string, title: string) {
-  return discordFetch(config, `/channels/${channelId}/messages`, {
-    method: "POST",
-    body: JSON.stringify({
-      content: `🎬 <@${userId}> **${title}** is now available. Snacks ready?`,
-      allowed_mentions: { users: [userId] },
-    }),
-  });
+  try {
+    await discordFetch(config, `/channels/${channelId}/messages`, {
+      method: "POST",
+      body: JSON.stringify({
+        content: `🎬 <@${userId}> **${title}** is now available. Snacks ready?`,
+        allowed_mentions: { users: [userId] },
+      }),
+    });
+    return { delivery: "channel" as const };
+  } catch (channelError) {
+    try {
+      const directMessage = await discordFetch<{ id: string }>(config, "/users/@me/channels", {
+        method: "POST",
+        body: JSON.stringify({ recipient_id: userId }),
+      });
+      await discordFetch(config, `/channels/${directMessage.id}/messages`, {
+        method: "POST",
+        body: JSON.stringify({
+          content: `🎬 **${title}** is now available. Snacks ready?`,
+          allowed_mentions: { parse: [] },
+        }),
+      });
+      return { delivery: "dm" as const };
+    } catch (directMessageError) {
+      const channelReason = channelError instanceof Error ? channelError.message : "channel delivery failed";
+      const directReason = directMessageError instanceof Error ? directMessageError.message : "DM delivery failed";
+      throw new Error(`${channelReason}; DM fallback: ${directReason}`);
+    }
+  }
 }

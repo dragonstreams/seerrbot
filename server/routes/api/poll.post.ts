@@ -19,12 +19,15 @@ export default defineHandler(async (event) => {
       result.notified ? `sent ${result.notified} notification${result.notified === 1 ? "" : "s"}` : "",
       result.notificationFailed ? `${result.notificationFailed} Discord notification${result.notificationFailed === 1 ? "" : "s"} failed` : "",
     ].filter(Boolean);
+    const failureDetail = result.notificationErrors[0];
     return {
       ok: true,
       ...result,
-      message: updates.length
-        ? `${updates.join("; ")}.`
-        : `Checked ${result.checked} Seerr request${result.checked === 1 ? "" : "s"}; everything is up to date.`,
+      message: failureDetail
+        ? `${updates.join("; ")}. ${failureDetail}`
+        : updates.length
+          ? `${updates.join("; ")}.`
+          : `Checked ${result.checked} Seerr request${result.checked === 1 ? "" : "s"}; everything is up to date.`,
     };
   } catch (error) {
     console.error("ReelRelay status check failed", error);
