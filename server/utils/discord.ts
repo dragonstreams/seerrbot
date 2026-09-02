@@ -62,6 +62,7 @@ export async function editInteractionResponse(
   interactionToken: string,
   content: string,
   posterUrl?: string,
+  components: Array<Record<string, unknown>> = [],
 ) {
   const response = await fetch(
     `https://discord.com/api/v10/webhooks/${applicationId}/${interactionToken}/messages/@original`,
@@ -72,6 +73,7 @@ export async function editInteractionResponse(
         content,
         allowed_mentions: { parse: [] },
         embeds: posterUrl ? [{ image: { url: posterUrl } }] : [],
+        components,
       }),
     },
   );

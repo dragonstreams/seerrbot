@@ -6,7 +6,11 @@ import { readStore, writeStore, type ReelRelayConfig } from "../../../utils/stor
 
 const response = (data: Record<string, unknown>, type = 4) => ({ type, data });
 
-async function completeRequest(
+function posterUrl(path?: string) {
+  return path ? `https://image.tmdb.org/t/p/w500${path}` : undefined;
+}
+
+async function prepareRequest(
   config: ReelRelayConfig,
   interaction: any,
   rawValue: string,
@@ -30,20 +34,52 @@ async function completeRequest(
       return;
     }
 
-    const [created, mediaDetails] = await Promise.all([
-      createSeerrRequest(config, picked.id, picked.mediaType),
-      getSeerrMediaDetails(config, picked.mediaType, picked.id).catch(() => null),
+    const details = await getSeerrMediaDetails(config, picked.mediaType, picked.id).catch(() => null);
+    const title = details?.title ?? details?.name ?? picked.title;
+    await editInteractionResponse(
+      config.discordApplicationId,
+      interaction.token,
+      `Request **${title}**? Nothing will be sent to Seerr until you confirm.`,
+      posterUrl(details?.posterPath),
+      [{
+        type: 1,
+        components: [{
+          type: 2,
+          style: 3,
+          label: "Confirm request",
+          custom_id: `reelrelay_confirm:${picked.mediaType}:${picked.id}`,
+        }],
+      }],
+    );
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Unknown error";
+    await editInteractionResponse(
+      config.discordApplicationId,
+      interaction.token,
+      `I couldn't prepare that request: ${message}`,
+    );
+  }
+}
+
+async function submitConfirmedRequest(
+  config: ReelRelayConfig,
+  interaction: any,
+  mediaType: "movie" | "tv",
+  mediaId: number,
+) {
+  try {
+    const [created, details] = await Promise.all([
+      createSeerrRequest(config, mediaId, mediaType),
+      getSeerrMediaDetails(config, mediaType, mediaId),
     ]);
-    const posterUrl = mediaDetails?.posterPath
-      ? `https://image.tmdb.org/t/p/w500${mediaDetails.posterPath}`
-      : undefined;
+    const title = details.title ?? details.name ?? `${mediaType === "movie" ? "Movie" : "TV series"} #${mediaId}`;
     const store = await readStore();
     store.requests.push({
       id: crypto.randomUUID(),
       seerrRequestId: created.id,
-      mediaId: picked.id,
-      mediaType: picked.mediaType,
-      title: picked.title,
+      mediaId,
+      mediaType,
+      title,
       userId: interaction.member?.user?.id ?? interaction.user?.id,
       channelId: interaction.channel_id,
       createdAt: new Date().toISOString(),
@@ -55,8 +91,8 @@ async function completeRequest(
     await editInteractionResponse(
       config.discordApplicationId,
       interaction.token,
-      `🍿 **${picked.title}** has been requested! I'll ping you here when it's ready.`,
-      posterUrl,
+      `🍿 **${title}** has been requested! I'll ping you here when it's ready.`,
+      posterUrl(details.posterPath),
     );
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown error";
@@ -88,6 +124,18 @@ export default defineHandler(async (event) => {
   const interaction = JSON.parse(raw);
   if (interaction.type === 1) return { type: 1 };
 
+  if (interaction.type === 3) {
+    const confirmation = String(interaction.data?.custom_id ?? "").match(/^reelrelay_confirm:(movie|tv):(\d+)$/);
+    if (!confirmation) return response({ content: "That action is no longer available.", flags: 64 });
+    void submitConfirmedRequest(
+      store.config,
+      interaction,
+      confirmation[1] as "movie" | "tv",
+      Number(confirmation[2]),
+    );
+    return response({ content: "Submitting request…", components: [] }, 7);
+  }
+
   const options = interaction.data?.options ?? [];
   const titleOption = options.find((item: any) => item.name === "title");
   const typeOption = options.find((item: any) => item.name === "type");
@@ -112,7 +160,6 @@ export default defineHandler(async (event) => {
   }
 
   const rawValue = String(titleOption?.value ?? "");
-  void completeRequest(store.config, interaction, rawValue, mediaType);
-
+  void prepareRequest(store.config, interaction, rawValue, mediaType);
   return response({ flags: 64 }, 5);
 });
