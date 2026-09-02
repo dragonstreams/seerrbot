@@ -13,11 +13,15 @@ export default defineHandler(async (event) => {
   }
 
   const result = await pollFulfilledRequests();
+  const updates = [
+    result.synced ? `synced ${result.synced} request${result.synced === 1 ? "" : "s"}` : "",
+    result.notified ? `sent ${result.notified} notification${result.notified === 1 ? "" : "s"}` : "",
+  ].filter(Boolean);
   return {
     ok: true,
     ...result,
-    message: result.notified
-      ? `Sent ${result.notified} notification${result.notified === 1 ? "" : "s"}.`
-      : "Everything is up to date.",
+    message: updates.length
+      ? `${updates.join(" and ")}.`
+      : `Checked ${result.checked} Seerr request${result.checked === 1 ? "" : "s"}; everything is up to date.`,
   };
 });

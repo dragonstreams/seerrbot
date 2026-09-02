@@ -1,4 +1,5 @@
-import { Bot, CheckCircle2, Clock3, Film, RefreshCw, Sparkles, Tv2 } from "lucide-react";
+import { useState } from "react";
+import { Bot, CheckCircle2, Clock3, Film, Loader2, RefreshCw, Sparkles, Tv2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import type { SafeConfig } from "./SetupForm";
@@ -13,12 +14,26 @@ type Props = {
 };
 
 export function StatusOverview({ config, requests, counts, onRefresh }: Props) {
+  const [checking, setChecking] = useState(false);
+
   async function checkNow() {
-    const response = await fetch("/api/poll", { method: "POST", headers: { "x-admin-secret": sessionStorage.getItem("reelrelay-secret") ?? "" } });
-    const data = await response.json().catch(() => ({}));
-    if (!response.ok) return toast.error(data.statusMessage ?? "Status check failed");
-    toast.success(data.message);
-    onRefresh();
+    const secret = sessionStorage.getItem("reelrelay-secret") ?? "";
+    if (!secret) {
+      toast.error("Open Setup and enter your dashboard secret before checking Seerr.");
+      return;
+    }
+    setChecking(true);
+    try {
+      const response = await fetch("/api/poll", { method: "POST", headers: { "x-admin-secret": secret } });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.statusMessage ?? "Status check failed");
+      await onRefresh();
+      toast.success(data.message);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Status check failed");
+    } finally {
+      setChecking(false);
+    }
   }
 
   return <div className="space-y-5">
@@ -44,8 +59,8 @@ export function StatusOverview({ config, requests, counts, onRefresh }: Props) {
 
     <section className="panel p-5 sm:p-6">
       <div className="flex items-center justify-between gap-4">
-        <div><h2 className="text-lg font-bold">Recent requests</h2><p className="mt-1 text-sm text-slate-400">The latest titles sent through Discord.</p></div>
-        <Button variant="outline" size="sm" className="rounded-xl border-white/10 bg-white/[.04]" onClick={checkNow}><RefreshCw size={15} /> Check now</Button>
+        <div><h2 className="text-lg font-bold">Recent requests</h2><p className="mt-1 text-sm text-slate-400">The latest titles synchronized from Seerr.</p></div>
+        <Button variant="outline" size="sm" className="rounded-xl border-white/10 bg-white/[.04]" onClick={checkNow} disabled={checking}>{checking ? <Loader2 className="animate-spin" size={15} /> : <RefreshCw size={15} />} {checking ? "Checking…" : "Check now"}</Button>
       </div>
       {requests.length ? <div className="mt-5 space-y-2">{requests.map((item) => <div key={item.id} className="request-row">
         <span className="request-icon">{item.mediaType === "movie" ? <Film size={17} /> : <Tv2 size={17} />}</span>
@@ -53,7 +68,7 @@ export function StatusOverview({ config, requests, counts, onRefresh }: Props) {
         <span className={`request-state ${item.status}`}>{item.status === "available" ? "Ready" : "Requested"}</span>
       </div>)}</div> : <div className="empty-state">
         <img src="/assets/request-journey.png" alt="Bot carrying a request to a home cinema" />
-        <div><p>No requests yet</p><span>Publish the command, then try <code>/request</code> in Discord.</span></div>
+        <div><p>No requests yet</p><span>Request a title in Discord or Seerr, then select <strong>Check now</strong>.</span></div>
       </div>}
     </section>
 

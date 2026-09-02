@@ -89,3 +89,15 @@ export async function createSeerrRequest(config: ReelRelayConfig, mediaId: numbe
 export async function getSeerrRequests(config: ReelRelayConfig) {
   return seerrFetch<{ results?: Array<Record<string, any>> }>(config, "/api/v1/request?take=100&skip=0&sort=added");
 }
+
+export async function getSeerrMediaTitle(
+  config: ReelRelayConfig,
+  mediaType: "movie" | "tv",
+  mediaId: number,
+) {
+  const media = await seerrFetch<{ title?: string; name?: string }>(
+    config,
+    `/api/v1/${mediaType}/${mediaId}`,
+  );
+  return media.title ?? media.name;
+}
