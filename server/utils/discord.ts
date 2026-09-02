@@ -27,7 +27,17 @@ async function discordFetch<T>(config: ReelRelayConfig, path: string, init?: Req
   return (response.status === 204 ? {} : await response.json()) as T;
 }
 
+export async function verifyDiscordGuild(config: ReelRelayConfig) {
+  if (!config.discordGuildId) return;
+  try {
+    await discordFetch(config, `/guilds/${config.discordGuildId}`);
+  } catch {
+    throw new Error("The bot is not installed in that Discord server. Use Invite bot, authorize it, then publish the command again.");
+  }
+}
+
 export async function registerCommands(config: ReelRelayConfig) {
+  await verifyDiscordGuild(config);
   const path = config.discordGuildId
     ? `/applications/${config.discordApplicationId}/guilds/${config.discordGuildId}/commands`
     : `/applications/${config.discordApplicationId}/commands`;

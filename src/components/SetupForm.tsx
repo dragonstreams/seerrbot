@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Bot, Check, Eye, EyeOff, KeyRound, Link2, Loader2, Save, Server, ShieldCheck, TestTube2 } from "lucide-react";
+import { Bot, Check, ExternalLink, Eye, EyeOff, KeyRound, Link2, Loader2, Save, Server, ShieldCheck, TestTube2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -87,6 +87,9 @@ export function SetupForm({ config, onSaved }: Props) {
     } finally { setBusy(null); }
   }
 
+  const inviteUrl = form.discordApplicationId
+    ? `https://discord.com/oauth2/authorize?client_id=${encodeURIComponent(form.discordApplicationId)}&permissions=3072&scope=bot%20applications.commands${form.discordGuildId ? `&guild_id=${encodeURIComponent(form.discordGuildId)}&disable_guild_select=true` : ""}`
+    : "";
   const secretType = showSecrets ? "text" : "password";
   return (
     <form onSubmit={save} className="space-y-6">
@@ -108,9 +111,13 @@ export function SetupForm({ config, onSaved }: Props) {
           <Field label="Public key"><Input type={secretType} value={form.discordPublicKey} onChange={change("discordPublicKey")} placeholder={config?.hasPublicKey ? "Saved securely ••••••••" : "Discord public key"} /></Field>
           <Field label="Bot token"><Input type={secretType} value={form.discordBotToken} onChange={change("discordBotToken")} placeholder={config?.hasDiscordToken ? "Saved securely ••••••••" : "Discord bot token"} /></Field>
         </div>
-        <div className="mt-4 flex flex-col gap-3 sm:flex-row">
-          <Button type="button" variant="outline" className="rounded-xl border-white/10 bg-white/[.04]" onClick={() => action("discord")} disabled={!!busy}><TestTube2 size={16} /> Test Discord</Button>
-          <Button type="button" variant="outline" className="rounded-xl border-white/10 bg-white/[.04]" onClick={() => action("register")} disabled={!!busy}><Bot size={16} /> Publish /request</Button>
+        <div className="mt-4 rounded-xl border border-[#5865F2]/20 bg-[#5865F2]/[.08] p-3 text-xs leading-5 text-slate-400">
+          Install the bot in your server before publishing the slash command. You need Discord’s <strong className="text-slate-200">Manage Server</strong> permission to authorize it.
+        </div>
+        <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+          <Button type="button" className="rounded-xl bg-[#5865F2] text-white hover:bg-[#6873f5]" disabled={!inviteUrl} onClick={() => window.open(inviteUrl, "_blank", "noopener,noreferrer")}><ExternalLink size={16} /> 1. Invite bot</Button>
+          <Button type="button" variant="outline" className="rounded-xl border-white/10 bg-white/[.04]" onClick={() => action("discord")} disabled={!!busy}><TestTube2 size={16} /> 2. Test connection</Button>
+          <Button type="button" variant="outline" className="rounded-xl border-white/10 bg-white/[.04]" onClick={() => action("register")} disabled={!!busy}><Bot size={16} /> 3. Publish /request</Button>
         </div>
       </section>
 

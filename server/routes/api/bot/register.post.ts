@@ -12,6 +12,13 @@ export default defineHandler(async (event) => {
   if (!store.config.discordApplicationId || !store.config.discordBotToken) {
     throw createError({ statusCode: 400, statusMessage: "Discord application ID and bot token are required." });
   }
-  await registerCommands(store.config);
-  return { ok: true, message: `The /request command is live${store.config.discordGuildId ? " in your server" : " globally"}.` };
+  try {
+    await registerCommands(store.config);
+    return { ok: true, message: `The /request command is live${store.config.discordGuildId ? " in your server" : " globally"}.` };
+  } catch (error) {
+    throw createError({
+      statusCode: 400,
+      statusMessage: error instanceof Error ? error.message : "Discord command registration failed.",
+    });
+  }
 });

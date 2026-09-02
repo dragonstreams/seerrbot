@@ -1,5 +1,6 @@
 import { defineHandler } from "nitro";
 import { createError, getRequestHeaders, readBody } from "nitro/h3";
+import { verifyDiscordGuild } from "../../utils/discord";
 import { testSeerr } from "../../utils/seerr";
 import { readStore } from "../../utils/store";
 
@@ -21,5 +22,13 @@ export default defineHandler(async (event) => {
   });
   if (!response.ok) throw createError({ statusCode: 400, statusMessage: "Discord rejected the bot token." });
   const bot = await response.json() as { username: string };
-  return { ok: true, message: `Connected as ${bot.username}.` };
+  try {
+    await verifyDiscordGuild(store.config);
+  } catch (error) {
+    throw createError({
+      statusCode: 400,
+      statusMessage: error instanceof Error ? error.message : "The bot is not installed in the configured server.",
+    });
+  }
+  return { ok: true, message: `Connected as ${bot.username}${store.config.discordGuildId ? " and found the server" : ""}.` };
 });
