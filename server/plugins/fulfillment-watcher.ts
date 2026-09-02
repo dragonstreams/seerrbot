@@ -1,7 +1,7 @@
-import { defineNitroPlugin } from "nitro";
+import { definePlugin } from "nitro";
 import { pollFulfilledRequests } from "../utils/poller";
 
-export default defineNitroPlugin(() => {
+export default definePlugin(() => {
   const timer = setInterval(() => {
     pollFulfilledRequests().catch((error) => {
       console.error("ReelRelay fulfillment check failed", error);

@@ -1,0 +1,11 @@
+node_modules
+.output
+dist
+.git
+.github
+.dyad
+.data
+*.log
+.env
+.env.*
+README.md

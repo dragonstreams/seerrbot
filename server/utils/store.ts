@@ -27,8 +27,9 @@ export type TrackedRequest = {
 
 type StoreData = { config?: ReelRelayConfig; requests: TrackedRequest[] };
 
-const storePath = join(process.cwd(), ".data", "reelrelay.enc");
-const keyPath = join(process.cwd(), ".data", "reelrelay.key");
+const dataDirectory = process.env.REELRELAY_DATA_DIR || join(process.cwd(), ".data");
+const storePath = join(dataDirectory, "reelrelay.enc");
+const keyPath = join(dataDirectory, "reelrelay.key");
 
 async function getKey() {
   await mkdir(dirname(storePath), { recursive: true });
