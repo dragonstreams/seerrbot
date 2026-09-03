@@ -10,6 +10,10 @@ function posterUrl(path?: string) {
   return path ? `https://image.tmdb.org/t/p/w500${path}` : undefined;
 }
 
+function isAlreadyAvailable(status?: number | string) {
+  return Number(status) === 5 || String(status).toLowerCase() === "available";
+}
+
 async function prepareRequest(
   config: ReelRelayConfig,
   interaction: any,
@@ -36,6 +40,15 @@ async function prepareRequest(
 
     const details = await getSeerrMediaDetails(config, picked.mediaType, picked.id).catch(() => null);
     const title = details?.title ?? details?.name ?? picked.title;
+    if (isAlreadyAvailable(details?.mediaInfo?.status)) {
+      await editInteractionResponse(
+        config.discordApplicationId,
+        interaction.token,
+        "This Item is already available",
+        posterUrl(details?.posterPath),
+      );
+      return;
+    }
     await editInteractionResponse(
       config.discordApplicationId,
       interaction.token,
@@ -68,10 +81,17 @@ async function submitConfirmedRequest(
   mediaId: number,
 ) {
   try {
-    const [created, details] = await Promise.all([
-      createSeerrRequest(config, mediaId, mediaType),
-      getSeerrMediaDetails(config, mediaType, mediaId),
-    ]);
+    const details = await getSeerrMediaDetails(config, mediaType, mediaId);
+    if (isAlreadyAvailable(details.mediaInfo?.status)) {
+      await editInteractionResponse(
+        config.discordApplicationId,
+        interaction.token,
+        "This Item is already available",
+        posterUrl(details.posterPath),
+      );
+      return;
+    }
+    const created = await createSeerrRequest(config, mediaId, mediaType);
     const title = details.title ?? details.name ?? `${mediaType === "movie" ? "Movie" : "TV series"} #${mediaId}`;
     const store = await readStore();
     store.requests.push({

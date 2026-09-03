@@ -95,10 +95,12 @@ export async function getSeerrMediaDetails(
   mediaType: "movie" | "tv",
   mediaId: number,
 ) {
-  return seerrFetch<{ title?: string; name?: string; posterPath?: string }>(
-    config,
-    `/api/v1/${mediaType}/${mediaId}`,
-  );
+  return seerrFetch<{
+    title?: string;
+    name?: string;
+    posterPath?: string;
+    mediaInfo?: { status?: number | string };
+  }>(config, `/api/v1/${mediaType}/${mediaId}`);
 }
 
 export async function getSeerrMediaTitle(
