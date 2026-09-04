@@ -2,20 +2,21 @@
 
 ReelRelay is a self-hosted Discord bot and web dashboard for submitting movie and TV requests to [Seerr](https://github.com/seerr-team/seerr). It signs in using a Seerr username and password, so a Seerr API key is not required.
 
-When someone uses `/seerr`, ReelRelay:
+When someone uses `/seerr` or `/seerr4k`, ReelRelay:
 
 1. searches Seerr and displays matching titles through Discord autocomplete;
-2. checks whether the selected title is already available;
-3. replies `This Item is already available` if Seerr reports it as available;
+2. checks the standard or 4K availability status for the selected title;
+3. reports when the requested version is already available;
 4. otherwise shows the poster and asks the user to confirm;
-5. submits the confirmed request to Seerr; and
-6. checks Seerr every two minutes, notifying the requester when the title becomes available.
+5. submits the confirmed standard or 4K request to Seerr; and
+6. checks Seerr every two minutes, notifying the requester when that version becomes available.
 
 ## Features
 
-- Discord `/seerr` command for movies and TV series
+- Discord `/seerr` command for standard movie and TV requests
+- Discord `/seerr4k` command for 4K movie and TV requests
 - Search autocomplete and poster previews
-- Availability checks before confirmation and immediately before submission
+- Separate standard and 4K availability checks before confirmation and submission
 - Confirmation button to prevent accidental requests
 - Automatic Seerr fulfillment polling
 - Notification in the original Discord channel, with DM fallback
@@ -172,7 +173,7 @@ After saving the setup:
    ```
 
 6. Save the endpoint and wait for Discord's verification to succeed.
-7. Return to ReelRelay and select **Publish /seerr**.
+7. Return to ReelRelay and select **Publish /seerr + /seerr4k**.
 
 The public hostname must use HTTPS and must be reachable by Discord. A local development server requires a secure public tunnel if you want to test live Discord interactions.
 
@@ -180,14 +181,15 @@ The public hostname must use HTTPS and must be reachable by Discord. A local dev
 
 In the configured Discord server:
 
-1. Enter `/seerr`.
+1. Enter `/seerr` for a standard request or `/seerr4k` for a 4K request.
 2. Choose **Movie** or **TV series** and begin typing a title.
 3. Select a result from autocomplete.
-4. If Seerr already reports the title as available, ReelRelay responds with `This Item is already available` and does not submit a request.
-5. Otherwise, verify the poster and select **Confirm request**.
-6. Confirm that the request appears in Seerr and on the ReelRelay dashboard.
+4. ReelRelay checks the matching Seerr availability field: standard status for `/seerr`, or 4K status for `/seerr4k`.
+5. If that version is already available, ReelRelay reports it and does not submit a request.
+6. Otherwise, verify the poster and select the confirmation button.
+7. Confirm that the request appears in Seerr with the expected 4K setting and on the ReelRelay dashboard.
 
-ReelRelay checks recent requests every two minutes. When Seerr marks a tracked request as available, the bot attempts to notify the user in the original channel. If channel delivery fails, it attempts a direct message. The dashboard records failed notification attempts.
+ReelRelay checks recent requests every two minutes. It tracks standard and 4K fulfillment independently. When Seerr marks the requested version as available, the bot attempts to notify the user in the original channel. If channel delivery fails, it attempts a direct message. The dashboard records failed notification attempts.
 
 ## Deploying from GitHub Container Registry
 
@@ -239,7 +241,7 @@ Without the `/data` volume, credentials and request history are lost whenever Bu
 5. Deploy and open the Bunny-provided public hostname.
 6. Complete the ReelRelay setup page.
 7. Configure Discord's interactions endpoint using the Bunny hostname.
-8. Invite the bot, test the connection, and publish `/seerr`.
+8. Invite the bot, test the connection, and publish `/seerr` and `/seerr4k`.
 
 ## Configuration and persistent data
 
@@ -282,11 +284,17 @@ For predictable rollbacks, deploy an immutable `sha-COMMIT` or version tag rathe
 - Confirm that the Application ID and Public Key belong to the same Discord application.
 - Check that your reverse proxy forwards POST requests and does not alter the request body; Discord signatures are verified against the exact raw body.
 
-### `/seerr` does not appear
+### `/seerr` or `/seerr4k` does not appear
 
 - Confirm the bot has been invited to the configured server.
-- Use **Test connection**, then **Publish /seerr** again.
+- Use **Test connection**, then **Publish /seerr + /seerr4k** again.
 - Verify that the Server ID is correct. Server commands normally appear quickly; global commands can take longer.
+
+### A 4K request fails
+
+- Confirm Seerr has a 4K Radarr or Sonarr service configured for that media type.
+- Confirm the configured Seerr user has permission to submit 4K requests.
+- Test the same 4K request directly in Seerr to verify its service and quality-profile settings.
 
 ### Seerr login fails
 

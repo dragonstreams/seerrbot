@@ -77,12 +77,17 @@ export async function searchSeerr(config: ReelRelayConfig, query: string, type?:
     }));
 }
 
-export async function createSeerrRequest(config: ReelRelayConfig, mediaId: number, mediaType: "movie" | "tv") {
+export async function createSeerrRequest(
+  config: ReelRelayConfig,
+  mediaId: number,
+  mediaType: "movie" | "tv",
+  is4k = false,
+) {
   return seerrFetch<{ id: number }>(config, "/api/v1/request", {
     method: "POST",
     body: JSON.stringify(mediaType === "tv"
-      ? { mediaId, mediaType, seasons: "all" }
-      : { mediaId, mediaType }),
+      ? { mediaId, mediaType, seasons: "all", is4k }
+      : { mediaId, mediaType, is4k }),
   });
 }
 
@@ -99,7 +104,10 @@ export async function getSeerrMediaDetails(
     title?: string;
     name?: string;
     posterPath?: string;
-    mediaInfo?: { status?: number | string };
+    mediaInfo?: {
+      status?: number | string;
+      status4k?: number | string;
+    };
   }>(config, `/api/v1/${mediaType}/${mediaId}`);
 }
 

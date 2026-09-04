@@ -8,6 +8,7 @@ export type TrackedRequest = {
   id: string;
   title: string;
   mediaType: "movie" | "tv";
+  is4k?: boolean;
   status: "pending" | "available";
   createdAt: string;
   notificationStatus?: "pending" | "sent" | "failed";
@@ -75,7 +76,7 @@ export function StatusOverview({ config, requests, counts, onRefresh }: Props) {
       </div>
       {requests.length ? <div className="mt-5 space-y-2">{requests.map((item) => <div key={item.id} className="request-row">
         <span className="request-icon">{item.mediaType === "movie" ? <Film size={17} /> : <Tv2 size={17} />}</span>
-        <div className="min-w-0 flex-1"><p className="truncate font-semibold text-slate-100">{item.title}</p><p className="text-xs text-slate-500">{new Date(item.createdAt).toLocaleDateString(undefined, { month: "short", day: "numeric" })} · {item.mediaType === "movie" ? "Movie" : "TV series"}</p></div>
+        <div className="min-w-0 flex-1"><p className="truncate font-semibold text-slate-100">{item.title}</p><p className="text-xs text-slate-500">{new Date(item.createdAt).toLocaleDateString(undefined, { month: "short", day: "numeric" })} · {item.mediaType === "movie" ? "Movie" : "TV series"}{item.is4k ? " · 4K" : ""}</p></div>
         <span className={`request-state ${item.notificationStatus === "failed" ? "failed" : item.status}`} title={item.notificationError}>{item.notificationStatus === "failed" ? "Notify failed" : item.status === "available" ? "Ready" : "Requested"}</span>
       </div>)}</div> : <div className="empty-state">
         <img src="/assets/request-journey.png" alt="Bot carrying a request to a home cinema" />

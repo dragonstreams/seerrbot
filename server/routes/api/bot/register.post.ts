@@ -14,7 +14,7 @@ export default defineHandler(async (event) => {
   }
   try {
     await registerCommands(store.config);
-    return { ok: true, message: `The /seerr command is live${store.config.discordGuildId ? " in your server" : " globally"}.` };
+    return { ok: true, message: `The /seerr and /seerr4k commands are live${store.config.discordGuildId ? " in your server" : " globally"}.` };
   } catch (error) {
     throw createError({
       statusCode: 400,

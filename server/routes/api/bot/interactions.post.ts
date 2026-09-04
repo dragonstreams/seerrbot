@@ -19,6 +19,7 @@ async function prepareRequest(
   interaction: any,
   rawValue: string,
   mediaType?: "movie" | "tv",
+  is4k = false,
 ) {
   try {
     const encoded = rawValue.match(/^(movie|tv):(\d+):(.+)$/);
@@ -40,11 +41,12 @@ async function prepareRequest(
 
     const details = await getSeerrMediaDetails(config, picked.mediaType, picked.id).catch(() => null);
     const title = details?.title ?? details?.name ?? picked.title;
-    if (isAlreadyAvailable(details?.mediaInfo?.status)) {
+    const availability = is4k ? details?.mediaInfo?.status4k : details?.mediaInfo?.status;
+    if (isAlreadyAvailable(availability)) {
       await editInteractionResponse(
         config.discordApplicationId,
         interaction.token,
-        "This Item is already available",
+        is4k ? "This Item is already available in 4K" : "This Item is already available",
         posterUrl(details?.posterPath),
       );
       return;
@@ -52,15 +54,15 @@ async function prepareRequest(
     await editInteractionResponse(
       config.discordApplicationId,
       interaction.token,
-      `Request **${title}**? Nothing will be sent to Seerr until you confirm.`,
+      `Request **${title}**${is4k ? " in 4K" : ""}? Nothing will be sent to Seerr until you confirm.`,
       posterUrl(details?.posterPath),
       [{
         type: 1,
         components: [{
           type: 2,
           style: 3,
-          label: "Confirm request",
-          custom_id: `reelrelay_confirm:${picked.mediaType}:${picked.id}`,
+          label: is4k ? "Confirm 4K request" : "Confirm request",
+          custom_id: `reelrelay_confirm:${is4k ? "4k:" : ""}${picked.mediaType}:${picked.id}`,
         }],
       }],
     );
@@ -79,19 +81,21 @@ async function submitConfirmedRequest(
   interaction: any,
   mediaType: "movie" | "tv",
   mediaId: number,
+  is4k: boolean,
 ) {
   try {
     const details = await getSeerrMediaDetails(config, mediaType, mediaId);
-    if (isAlreadyAvailable(details.mediaInfo?.status)) {
+    const availability = is4k ? details.mediaInfo?.status4k : details.mediaInfo?.status;
+    if (isAlreadyAvailable(availability)) {
       await editInteractionResponse(
         config.discordApplicationId,
         interaction.token,
-        "This Item is already available",
+        is4k ? "This Item is already available in 4K" : "This Item is already available",
         posterUrl(details.posterPath),
       );
       return;
     }
-    const created = await createSeerrRequest(config, mediaId, mediaType);
+    const created = await createSeerrRequest(config, mediaId, mediaType, is4k);
     const title = details.title ?? details.name ?? `${mediaType === "movie" ? "Movie" : "TV series"} #${mediaId}`;
     const store = await readStore();
     store.requests.push({
@@ -99,6 +103,7 @@ async function submitConfirmedRequest(
       seerrRequestId: created.id,
       mediaId,
       mediaType,
+      is4k,
       title,
       userId: interaction.member?.user?.id ?? interaction.user?.id,
       channelId: interaction.channel_id,
@@ -111,7 +116,7 @@ async function submitConfirmedRequest(
     await editInteractionResponse(
       config.discordApplicationId,
       interaction.token,
-      `🍿 **${title}** has been requested! I'll ping you here when it's ready.`,
+      `🍿 **${title}**${is4k ? " in 4K" : ""} has been requested! I'll ping you here when it's ready.`,
       posterUrl(details.posterPath),
     );
   } catch (error) {
@@ -145,13 +150,15 @@ export default defineHandler(async (event) => {
   if (interaction.type === 1) return { type: 1 };
 
   if (interaction.type === 3) {
-    const confirmation = String(interaction.data?.custom_id ?? "").match(/^reelrelay_confirm:(movie|tv):(\d+)$/);
+    const confirmation = String(interaction.data?.custom_id ?? "")
+      .match(/^reelrelay_confirm:(?:(4k):)?(movie|tv):(\d+)$/);
     if (!confirmation) return response({ content: "That action is no longer available.", flags: 64 });
     void submitConfirmedRequest(
       store.config,
       interaction,
-      confirmation[1] as "movie" | "tv",
-      Number(confirmation[2]),
+      confirmation[2] as "movie" | "tv",
+      Number(confirmation[3]),
+      confirmation[1] === "4k",
     );
     return response({ content: "Submitting request…", components: [] }, 7);
   }
@@ -175,11 +182,12 @@ export default defineHandler(async (event) => {
     }
   }
 
-  if (interaction.type !== 2 || interaction.data?.name !== "seerr") {
+  const commandName = interaction.data?.name;
+  if (interaction.type !== 2 || (commandName !== "seerr" && commandName !== "seerr4k")) {
     return response({ content: "That command is not supported.", flags: 64 });
   }
 
   const rawValue = String(titleOption?.value ?? "");
-  void prepareRequest(store.config, interaction, rawValue, mediaType);
+  void prepareRequest(store.config, interaction, rawValue, mediaType, commandName === "seerr4k");
   return response({ flags: 64 }, 5);
 });

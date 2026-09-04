@@ -3,8 +3,8 @@ import { notifyAvailable } from "./discord";
 import { getSeerrMediaTitle, getSeerrRequests } from "./seerr";
 import { readStore, writeStore, type TrackedRequest } from "./store";
 
-function isAvailable(request: Record<string, any>) {
-  const status = request.media?.status;
+function isAvailable(request: Record<string, any>, is4k = false) {
+  const status = is4k ? request.media?.status4k : request.media?.status;
   return Number(status) === 5 || String(status).toLowerCase() === "available";
 }
 
@@ -17,6 +17,7 @@ async function importRequest(
   if (mediaType !== "movie" && mediaType !== "tv") return null;
 
   const mediaId = Number(media.tmdbId ?? request.mediaId ?? 0);
+  const is4k = Boolean(request.is4k);
   let title = String(media.title ?? media.name ?? request.title ?? "").trim();
   if (!title && mediaId) {
     try {
@@ -31,11 +32,12 @@ async function importRequest(
     seerrRequestId: Number(request.id),
     mediaId,
     mediaType,
+    is4k,
     title: title || `${mediaType === "movie" ? "Movie" : "TV series"} #${mediaId || request.id}`,
     userId: "",
     channelId: "",
     createdAt: String(request.createdAt ?? new Date().toISOString()),
-    status: isAvailable(request) ? "available" : "pending",
+    status: isAvailable(request, is4k) ? "available" : "pending",
   };
 }
 
@@ -65,7 +67,7 @@ export async function pollFulfilledRequests() {
 
   for (const item of store.requests) {
     const match = remoteRequests.find((request) => Number(request.id) === item.seerrRequestId);
-    if (!match || !isAvailable(match)) continue;
+    if (!match || !isAvailable(match, item.is4k)) continue;
 
     const canNotify = item.channelId && item.userId;
     const shouldNotify = canNotify
@@ -74,7 +76,7 @@ export async function pollFulfilledRequests() {
     if (shouldNotify) {
       item.notificationAttempts = (item.notificationAttempts ?? 0) + 1;
       try {
-        await notifyAvailable(store.config, item.channelId, item.userId, item.title);
+        await notifyAvailable(store.config, item.channelId, item.userId, `${item.title}${item.is4k ? " (4K)" : ""}`);
         item.notificationStatus = "sent";
         item.notificationError = undefined;
         notified += 1;

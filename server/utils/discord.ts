@@ -41,19 +41,27 @@ export async function registerCommands(config: ReelRelayConfig) {
   const path = config.discordGuildId
     ? `/applications/${config.discordApplicationId}/guilds/${config.discordGuildId}/commands`
     : `/applications/${config.discordApplicationId}/commands`;
+  const options = [
+    { name: "title", description: "Start typing a title", type: 3, required: true, autocomplete: true },
+    { name: "type", description: "Movie or TV series", type: 3, required: true, choices: [
+      { name: "Movie", value: "movie" },
+      { name: "TV series", value: "tv" },
+    ] },
+  ];
   return discordFetch(config, path, {
     method: "PUT",
-    body: JSON.stringify([{
-      name: "seerr",
-      description: "Request a movie or TV series from Seerr",
-      options: [
-        { name: "title", description: "Start typing a title", type: 3, required: true, autocomplete: true },
-        { name: "type", description: "Movie or TV series", type: 3, required: true, choices: [
-          { name: "Movie", value: "movie" },
-          { name: "TV series", value: "tv" },
-        ] },
-      ],
-    }]),
+    body: JSON.stringify([
+      {
+        name: "seerr",
+        description: "Request a movie or TV series from Seerr",
+        options,
+      },
+      {
+        name: "seerr4k",
+        description: "Request a movie or TV series in 4K from Seerr",
+        options,
+      },
+    ]),
   });
 }
 

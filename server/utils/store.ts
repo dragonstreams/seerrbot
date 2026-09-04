@@ -18,6 +18,7 @@ export type TrackedRequest = {
   seerrRequestId: number;
   mediaId: number;
   mediaType: "movie" | "tv";
+  is4k?: boolean;
   title: string;
   userId: string;
   channelId: string;
