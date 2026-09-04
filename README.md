@@ -2,7 +2,7 @@
 
 ReelRelay is a self-hosted Discord bot and web dashboard for submitting movie and TV requests to [Seerr](https://github.com/seerr-team/seerr). It signs in using a Seerr username and password, so a Seerr API key is not required.
 
-When someone uses `/request`, ReelRelay:
+When someone uses `/seerr`, ReelRelay:
 
 1. searches Seerr and displays matching titles through Discord autocomplete;
 2. checks whether the selected title is already available;
@@ -13,7 +13,7 @@ When someone uses `/request`, ReelRelay:
 
 ## Features
 
-- Discord `/request` command for movies and TV series
+- Discord `/seerr` command for movies and TV series
 - Search autocomplete and poster previews
 - Availability checks before confirmation and immediately before submission
 - Confirmation button to prevent accidental requests
@@ -172,7 +172,7 @@ After saving the setup:
    ```
 
 6. Save the endpoint and wait for Discord's verification to succeed.
-7. Return to ReelRelay and select **Publish /request**.
+7. Return to ReelRelay and select **Publish /seerr**.
 
 The public hostname must use HTTPS and must be reachable by Discord. A local development server requires a secure public tunnel if you want to test live Discord interactions.
 
@@ -180,7 +180,7 @@ The public hostname must use HTTPS and must be reachable by Discord. A local dev
 
 In the configured Discord server:
 
-1. Enter `/request`.
+1. Enter `/seerr`.
 2. Choose **Movie** or **TV series** and begin typing a title.
 3. Select a result from autocomplete.
 4. If Seerr already reports the title as available, ReelRelay responds with `This Item is already available` and does not submit a request.
@@ -239,7 +239,7 @@ Without the `/data` volume, credentials and request history are lost whenever Bu
 5. Deploy and open the Bunny-provided public hostname.
 6. Complete the ReelRelay setup page.
 7. Configure Discord's interactions endpoint using the Bunny hostname.
-8. Invite the bot, test the connection, and publish `/request`.
+8. Invite the bot, test the connection, and publish `/seerr`.
 
 ## Configuration and persistent data
 
@@ -282,10 +282,10 @@ For predictable rollbacks, deploy an immutable `sha-COMMIT` or version tag rathe
 - Confirm that the Application ID and Public Key belong to the same Discord application.
 - Check that your reverse proxy forwards POST requests and does not alter the request body; Discord signatures are verified against the exact raw body.
 
-### `/request` does not appear
+### `/seerr` does not appear
 
 - Confirm the bot has been invited to the configured server.
-- Use **Test connection**, then **Publish /request** again.
+- Use **Test connection**, then **Publish /seerr** again.
 - Verify that the Server ID is correct. Server commands normally appear quickly; global commands can take longer.
 
 ### Seerr login fails

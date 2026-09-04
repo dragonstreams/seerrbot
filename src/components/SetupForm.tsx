@@ -117,7 +117,7 @@ export function SetupForm({ config, onSaved }: Props) {
         <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
           <Button type="button" className="rounded-xl bg-[#5865F2] text-white hover:bg-[#6873f5]" disabled={!inviteUrl} onClick={() => window.open(inviteUrl, "_blank", "noopener,noreferrer")}><ExternalLink size={16} /> 1. Invite bot</Button>
           <Button type="button" variant="outline" className="rounded-xl border-white/10 bg-white/[.04]" onClick={() => action("discord")} disabled={!!busy}><TestTube2 size={16} /> 2. Test connection</Button>
-          <Button type="button" variant="outline" className="rounded-xl border-white/10 bg-white/[.04]" onClick={() => action("register")} disabled={!!busy}><Bot size={16} /> 3. Publish /request</Button>
+          <Button type="button" variant="outline" className="rounded-xl border-white/10 bg-white/[.04]" onClick={() => action("register")} disabled={!!busy}><Bot size={16} /> 3. Publish /seerr</Button>
         </div>
       </section>
 

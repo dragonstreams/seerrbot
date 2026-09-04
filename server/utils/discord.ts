@@ -44,7 +44,7 @@ export async function registerCommands(config: ReelRelayConfig) {
   return discordFetch(config, path, {
     method: "PUT",
     body: JSON.stringify([{
-      name: "request",
+      name: "seerr",
       description: "Request a movie or TV series from Seerr",
       options: [
         { name: "title", description: "Start typing a title", type: 3, required: true, autocomplete: true },

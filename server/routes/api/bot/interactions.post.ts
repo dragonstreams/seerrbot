@@ -175,7 +175,7 @@ export default defineHandler(async (event) => {
     }
   }
 
-  if (interaction.type !== 2 || interaction.data?.name !== "request") {
+  if (interaction.type !== 2 || interaction.data?.name !== "seerr") {
     return response({ content: "That command is not supported.", flags: 64 });
   }
 
