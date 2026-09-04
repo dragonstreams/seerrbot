@@ -90,7 +90,13 @@ export async function editInteractionResponse(
   }
 }
 
-export async function notifyAvailable(config: ReelRelayConfig, channelId: string, userId: string, title: string) {
+export async function notifyAvailable(
+  config: ReelRelayConfig,
+  channelId: string,
+  userId: string,
+  title: string,
+  posterPath?: string,
+) {
   try {
     await discordFetch(config, `/channels/${channelId}/messages`, {
       method: "POST",
@@ -111,6 +117,9 @@ export async function notifyAvailable(config: ReelRelayConfig, channelId: string
         body: JSON.stringify({
           content: `🎬 **${title}** is now available. Snacks ready?`,
           allowed_mentions: { parse: [] },
+          embeds: posterPath
+            ? [{ image: { url: `https://image.tmdb.org/t/p/w500${posterPath}` } }]
+            : [],
         }),
       });
       return { delivery: "dm" as const };

@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { notifyAvailable } from "./discord";
-import { getSeerrMediaTitle, getSeerrRequests } from "./seerr";
+import { getSeerrMediaDetails, getSeerrMediaTitle, getSeerrRequests } from "./seerr";
 import { readStore, writeStore, type TrackedRequest } from "./store";
 
 function isAvailable(request: Record<string, any>, is4k = false) {
@@ -76,7 +76,21 @@ export async function pollFulfilledRequests() {
     if (shouldNotify) {
       item.notificationAttempts = (item.notificationAttempts ?? 0) + 1;
       try {
-        await notifyAvailable(store.config, item.channelId, item.userId, `${item.title}${item.is4k ? " (4K)" : ""}`);
+        if (!item.posterPath && item.mediaId) {
+          try {
+            const details = await getSeerrMediaDetails(store.config, item.mediaType, item.mediaId);
+            item.posterPath = details.posterPath;
+          } catch {
+            // Send the notification without an image if the poster lookup fails.
+          }
+        }
+        await notifyAvailable(
+          store.config,
+          item.channelId,
+          item.userId,
+          `${item.title}${item.is4k ? " (4K)" : ""}`,
+          item.posterPath,
+        );
         item.notificationStatus = "sent";
         item.notificationError = undefined;
         notified += 1;

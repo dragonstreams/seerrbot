@@ -20,6 +20,7 @@ export type TrackedRequest = {
   mediaType: "movie" | "tv";
   is4k?: boolean;
   title: string;
+  posterPath?: string;
   userId: string;
   channelId: string;
   createdAt: string;

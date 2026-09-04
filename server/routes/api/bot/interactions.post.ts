@@ -105,6 +105,7 @@ async function submitConfirmedRequest(
       mediaType,
       is4k,
       title,
+      posterPath: details.posterPath,
       userId: interaction.member?.user?.id ?? interaction.user?.id,
       channelId: interaction.channel_id,
       createdAt: new Date().toISOString(),
